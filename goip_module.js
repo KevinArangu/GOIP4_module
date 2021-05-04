@@ -17,53 +17,77 @@ const parametersDosend = (num, msg, provider=2) => {
         return parameters;
     } catch (error) {
         console.log(error)
-        return "error in parametersDosend funtion";
+        return "error in parametersDosend function";
     }
     
 };
 const parametersResend = (id) => {
-    const parameters = `messageid=${id}&USERNAME=${username}&PASSWORD=${password}`;
-    return parameters;
+    try {
+        const parameters = `messageid=${id}&USERNAME=${username}&PASSWORD=${password}`;
+        return parameters;
+    } catch (error) {
+        console.log(error)
+        return "error in parametersResend function";
+    }
 };
 
 //GET FUNCTIONS
 const getDosend = (parameters) => {
-    const request = new XMLHttpRequest();
-    request.onreadystatechange = () => {
-        if (request.readyState == 4) {
-            if(request.status == 200){
-                //console.log(request);
+    try {
+        const request = new XMLHttpRequest();
+        request.onreadystatechange = () => {
+            if (request.readyState == 4) {
+                if(request.status == 200){
+                    //console.log(request);
+                }
+                else{
+                    console.log("Error in Dosend");
+                    console.log(request);
+                }
             }
-            else{
-                console.log("Error in Dosend");
-                console.log(request);
-            }
-        }
-    };
-    request.open('GET', `${dosend}?${parameters}`, false)
-    request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-    request.send(null)
-    return request.responseText;
+        };
+        request.open('GET', `${dosend}?${parameters}`, false)
+        request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        request.send(null)
+        return request.responseText;
+    } catch (error) {
+        console.log(error)
+        return "error in getDosend function";
+    }
+    
 };
 const getResend = (parameters, num) => {
-    const request = new XMLHttpRequest();
-    request.onreadystatechange = () => {
-        if (request.readyState == 4) {
-            (request.status == 200) ? sendStatus(request.responseText, num) : console.log("Error in Resend:\n"+request);
-        }
-    };
-    request.open('GET', `${resend}?${parameters}`, false)
-    request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-    request.send(null)
-    return request.responseText;
+    try {
+        const request = new XMLHttpRequest();
+        request.onreadystatechange = () => {
+            if (request.readyState == 4) {
+                (request.status == 200) ? sendStatus(request.responseText, num) : console.log("Error in Resend:\n"+request);
+            }
+        };
+        request.open('GET', `${resend}?${parameters}`, false)
+        request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        request.send(null)
+        return request.responseText;
+    } catch (error) {
+        console.log(error)
+        return "error in getResend function";
+    }
 };
 
 //OTHERS NECESARY FUNCTIONS
 const findMsgId = (string) => {
-    const start = string.indexOf("messageid");
-    const end = string.indexOf("&USERNAME");
-    const result = string.slice(start+10, end);
-    return result.toString();
+
+    try {
+        const start = string.indexOf("messageid");
+        const end = string.indexOf("&USERNAME");
+        const result = string.slice(start+10, end);
+        return result.toString();
+    } catch (error) {
+        console.log(error)
+        return "error in findMsgId function";
+    }
+
+    
 };
 const clearSpaces = (string) => {
     const result = string.replace(/ /g, "").toString();
@@ -74,9 +98,17 @@ const msgFormat = (msg) => {
     return result;
 }
 const sendStatus = (string, tel) => {
-    const text = string.toString();
-    const result = (text.includes("ok"))? { tel: tel, status: "send" } : { tel: tel, status: "not send" };
-    return result;
+
+    try {
+        const text = string.toString();
+        const result = (text.includes("ok"))? "send" : "not send";
+        //const result = (text.includes("ok"))? { tel: tel, status: "send" } : { tel: tel, status: "not send" };
+        return result;
+    } catch (error) {
+        console.log(error)
+        return "error in sendStatus function";
+    }
+    
 }
 
 //SEND SMS FUNCTIONS 
@@ -84,17 +116,31 @@ const sendSingleSms = async (num, msg, provider = 3) => {
 
     try {
         const dosend = parametersDosend(num, msg, provider);
-        const statusDoSend = (dosend != "error in parametersDosend funtion")? "pasa parametersDosend" : dosend;
+        const statusDoSend = (dosend != "error in parametersDosend function") ? "pasa dosend" : dosend;
         console.log(statusDoSend);
+
         const smsDosend = await getDosend(dosend);
+        const statusSmsDosend = (smsDosend != "error in getDosend function") ? "pasa smsDosend" : smsDosend;
+        console.log(statusSmsDosend);
+
         const findId = findMsgId(smsDosend);
+        const statusFindId = (findId != "error in findMsgId function") ? "pasa findId" : findId;
+        console.log(statusFindId);
+
         const resend = parametersResend(findId);
+        const statusResend = (resend != "error in parametersResend function") ? "pasa resend" : resend;
+        console.log(statusResend);
+
         const smsResend = await getResend(resend, num);
-        const status = sendStatus(smsResend, num);
-        return status;
+        const statusSmsResend = (smsResend != "error in getResend function") ? "pasa smsResend" : smsResend;
+        console.log(statusSmsResend);
+
+        const sendStatus = sendStatus(smsResend, num);
+
+        return status; // REVISAR CADA FUNCION NUEVAMENTE PARA REVISAR QUE SUCEDE EN STATUS 200
     } catch (error) {
         console.log(error)
-        return { tel: num, status: "error", error: error}
+        return { tel: num, status: "error in code ejecution", error: error}
     }
 };
 
