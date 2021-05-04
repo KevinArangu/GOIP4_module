@@ -2,17 +2,24 @@
 
 const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 
-const dosend = 'http://192.168.0.208/goip/en/dosend.php';
-const resend = 'http://192.168.0.208/goip/en/resend.php';
+const dosend = 'http://172.16.127.17/goip/en/dosend.php';
+const resend = 'http://172.16.127.17/goip/en/resend.php';
 const username = 'integracion';
 const password = 'intercomgoip*';
 
 //GENERATING PARAMETERS FOR SEND BY HTTPREQUEST
 const parametersDosend = (num, msg, provider=2) => {
-    const tlf = clearSpaces(num);
-    const smsContent = msgFormat(msg);
-    const parameters = `USERNAME=${username}&PASSWORD=${password}&smsprovider=${provider}&smsnum=${tlf}&method=2&Memo=${smsContent}`;
-    return parameters;
+
+    try {
+        const tlf = clearSpaces(num);
+        const smsContent = msgFormat(msg);
+        const parameters = `USERNAME=${username}&PASSWORD=${password}&smsprovider=${provider}&smsnum=${tlf}&method=2&Memo=${smsContent}`;
+        return parameters;
+    } catch (error) {
+        console.log(error)
+        return "error in parametersDosend funtion";
+    }
+    
 };
 const parametersResend = (id) => {
     const parameters = `messageid=${id}&USERNAME=${username}&PASSWORD=${password}`;
@@ -24,7 +31,13 @@ const getDosend = (parameters) => {
     const request = new XMLHttpRequest();
     request.onreadystatechange = () => {
         if (request.readyState == 4) {
-            (request.status == 200) ? null : console.log("Error in Dosend:\n" + request);
+            if(request.status == 200){
+                //console.log(request);
+            }
+            else{
+                console.log("Error in Dosend");
+                console.log(request);
+            }
         }
     };
     request.open('GET', `${dosend}?${parameters}`, false)
@@ -32,11 +45,11 @@ const getDosend = (parameters) => {
     request.send(null)
     return request.responseText;
 };
-const getResend = (parameters) => {
+const getResend = (parameters, num) => {
     const request = new XMLHttpRequest();
     request.onreadystatechange = () => {
         if (request.readyState == 4) {
-            (request.status == 200) ? null : console.log("Error in Resend:\n"+request);
+            (request.status == 200) ? sendStatus(request.responseText, num) : console.log("Error in Resend:\n"+request);
         }
     };
     request.open('GET', `${resend}?${parameters}`, false)
@@ -62,24 +75,30 @@ const msgFormat = (msg) => {
 }
 const sendStatus = (string, tel) => {
     const text = string.toString();
-    const result = (text.includes("ok"))? {tel: tel, status: "send"} : {tel: tel, status: "not send"};
+    const result = (text.includes("ok"))? { tel: tel, status: "send" } : { tel: tel, status: "not send" };
     return result;
 }
 
 //SEND SMS FUNCTIONS 
-const sendSingleSms = async (num, msg, provider = 2) => {
+const sendSingleSms = async (num, msg, provider = 3) => {
 
-    const dosend = await parametersDosend(num, msg, provider);
-    const smsDosend = await getDosend(dosend);
-    const findId = findMsgId(smsDosend);
-    const resend = await parametersResend(findId);
-    const smsResend = await getResend(resend);
-    const status = await sendStatus(smsResend, num);
-    return status;
-
+    try {
+        const dosend = parametersDosend(num, msg, provider);
+        const statusDoSend = (dosend != "error in parametersDosend funtion")? "pasa parametersDosend" : dosend;
+        console.log(statusDoSend);
+        const smsDosend = await getDosend(dosend);
+        const findId = findMsgId(smsDosend);
+        const resend = parametersResend(findId);
+        const smsResend = await getResend(resend, num);
+        const status = sendStatus(smsResend, num);
+        return status;
+    } catch (error) {
+        console.log(error)
+        return { tel: num, status: "error", error: error}
+    }
 };
 
-const sendToAllClients = async (numArray, msg, provider = 2) => {
+const sendToAllClients = async (numArray=[], msg, provider = 3) => {
 
     const clients = await Promise.all( numArray.map( (client) => {
         const status = sendSingleSms(client, msg, provider);
@@ -92,4 +111,3 @@ const sendToAllClients = async (numArray, msg, provider = 2) => {
 module.exports = {
     sendSingleSms, sendToAllClients
 };
-
