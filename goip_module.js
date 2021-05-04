@@ -116,28 +116,26 @@ const sendSingleSms = async (num, msg, provider = 3) => {
 
     try {
         const dosend = parametersDosend(num, msg, provider);
-        const statusDoSend = (dosend != "error in parametersDosend function") ? "pasa dosend" : dosend;
-        console.log(statusDoSend);
+        const statusDoSend = (dosend != "error in parametersDosend function") ? "ok" : dosend;
 
         const smsDosend = await getDosend(dosend);
-        const statusSmsDosend = (smsDosend != "error in getDosend function") ? "pasa smsDosend" : smsDosend;
-        console.log(statusSmsDosend);
+        const statusSmsDosend = (smsDosend != "error in getDosend function") ? "ok" : smsDosend;
 
         const findId = findMsgId(smsDosend);
-        const statusFindId = (findId != "error in findMsgId function") ? "pasa findId" : findId;
-        console.log(statusFindId);
+        const statusFindId = (findId != "error in findMsgId function") ? "ok" : findId;
 
         const resend = parametersResend(findId);
-        const statusResend = (resend != "error in parametersResend function") ? "pasa resend" : resend;
-        console.log(statusResend);
+        const statusResend = (resend != "error in parametersResend function") ? "ok" : resend;
 
         const smsResend = await getResend(resend, num);
-        const statusSmsResend = (smsResend != "error in getResend function") ? "pasa smsResend" : smsResend;
-        console.log(statusSmsResend);
+        const statusSmsResend = (smsResend != "error in getResend function") ? "ok" : smsResend;
 
-        const sendStatus = sendStatus(smsResend, num);
+        const send_status = sendStatus(smsResend, num);
+        const statusSendStatus = (send_status != "error in sendStatus function") ? send_status : send_status;
 
-        return status; // REVISAR CADA FUNCION NUEVAMENTE PARA REVISAR QUE SUCEDE EN STATUS 200
+        const status = {statusDoSend, statusSmsDosend, statusFindId, statusResend, statusSmsResend, status: statusSendStatus, number: num, text: msg};
+        return status;// REVISAR CADA FUNCION NUEVAMENTE PARA REVISAR QUE SUCEDE EN STATUS 200
+
     } catch (error) {
         console.log(error)
         return { tel: num, status: "error in code ejecution", error: error}
