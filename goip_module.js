@@ -37,19 +37,20 @@ const getDosend = (parameters) => {
         const request = new XMLHttpRequest();
         request.onreadystatechange = () => {
             if (request.readyState == 4) {
-                if(request.status == 200){
-                    //console.log(request);
-                }
-                else{
-                    console.log("Error in Dosend");
-                    console.log(request);
-                }
+                // if(request.status == 200){
+                //     //console.log(request);
+                // }
+                // else{
+                //     console.log("Error in Dosend");
+                //     console.log(request);
+                // }
             }
         };
         request.open('GET', `${dosend}?${parameters}`, false)
         request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
         request.send(null)
-        return request.responseText;
+        const status = {code: request.status, text: request.responseText.toString()};
+        return status;
     } catch (error) {
         console.log(error)
         return "error in getDosend function";
@@ -61,13 +62,18 @@ const getResend = (parameters, num) => {
         const request = new XMLHttpRequest();
         request.onreadystatechange = () => {
             if (request.readyState == 4) {
-                (request.status == 200) ? sendStatus(request.responseText, num) : console.log("Error in Resend:\n"+request);
+                // const statusReq = (request.status == 200) ? "send" : `error in Resend, error ${request.readyState}`;
+                // console.log(status)
+                // return status;
             }
         };
         request.open('GET', `${resend}?${parameters}`, false)
         request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
         request.send(null)
-        return request.responseText;
+        //REVISO SI EL OUTPUT CONTIENE OK
+        const text = request.responseText.toString();
+        const result = (text.includes("ok"))? {status:"send", state:request.status} : {status:"not send", state:request.status, responseText: text};
+        return result;
     } catch (error) {
         console.log(error)
         return "error in getResend function";
@@ -97,21 +103,8 @@ const msgFormat = (msg) => {
     const result =  msg.replace(/ /g, "+").toString();
     return result;
 }
-const sendStatus = (string, tel) => {
 
-    try {
-        const text = string.toString();
-        const result = (text.includes("ok"))? "send" : "not send";
-        //const result = (text.includes("ok"))? { tel: tel, status: "send" } : { tel: tel, status: "not send" };
-        return result;
-    } catch (error) {
-        console.log(error)
-        return "error in sendStatus function";
-    }
-    
-}
-
-//SEND SMS FUNCTIONS 
+//SEND SMS FUNCTION
 const sendSingleSms = async (num, msg, provider = 3) => {
 
     try {
@@ -121,7 +114,7 @@ const sendSingleSms = async (num, msg, provider = 3) => {
         const smsDosend = await getDosend(dosend);
         const statusSmsDosend = (smsDosend != "error in getDosend function") ? "ok" : smsDosend;
 
-        const findId = findMsgId(smsDosend);
+        const findId = findMsgId(smsDosend.text);
         const statusFindId = (findId != "error in findMsgId function") ? "ok" : findId;
 
         const resend = parametersResend(findId);
@@ -130,11 +123,8 @@ const sendSingleSms = async (num, msg, provider = 3) => {
         const smsResend = await getResend(resend, num);
         const statusSmsResend = (smsResend != "error in getResend function") ? "ok" : smsResend;
 
-        const send_status = sendStatus(smsResend, num);
-        const statusSendStatus = (send_status != "error in sendStatus function") ? send_status : send_status;
-
-        const status = {statusDoSend, statusSmsDosend, statusFindId, statusResend, statusSmsResend, status: statusSendStatus, number: num, text: msg};
-        return status;// REVISAR CADA FUNCION NUEVAMENTE PARA REVISAR QUE SUCEDE EN STATUS 200
+        const status = {status: smsResend.status, tel: num, text: msg, statusDoSend, statusSmsDosend, statusFindId, statusResend, statusSmsResend, smsResendDetail: smsResend, smsDosendDetail: smsDosend};
+        return status;
 
     } catch (error) {
         console.log(error)
